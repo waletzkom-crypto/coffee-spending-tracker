@@ -13,6 +13,11 @@ app.use(express.json({ limit: '50mb' }));
 // Serve static files
 app.use(express.static('.'));
 
+// Serve the main app at root
+app.get('/', (req, res) => {
+    res.sendFile(__dirname + '/coffee-spending-tracker.html');
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
     res.json({ status: 'ok', message: 'Coffee Tracker API is running' });
