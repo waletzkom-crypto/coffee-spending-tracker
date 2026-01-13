@@ -545,8 +545,8 @@
 
             <div class="upload-zone" id="uploadZone">
                 <div class="upload-icon">📄</div>
-                <div class="upload-text">Drag & drop 3 PDF statements here</div>
-                <div class="upload-text" style="font-size: 0.9em; color: #A0826D;">or click to browse</div>
+                <div class="upload-text">Drag & drop up to 12 PDF statements here</div>
+                <div class="upload-text" style="font-size: 0.9em; color: #A0826D;">or click to browse (1-12 months)</div>
                 <input type="file" id="fileInput" accept=".pdf" multiple style="display: none;">
             </div>
 
@@ -559,7 +559,7 @@
 
             <div class="loading-spinner" id="loadingSpinner">
                 <div class="spinner"></div>
-                <p>Analyzing your coffee spending with Claude AI...</p>
+                <p id="loadingText">Analyzing your coffee spending with Claude AI...</p>
             </div>
         </div>
 
@@ -686,12 +686,12 @@
         function handleFiles(files) {
             const pdfFiles = Array.from(files).filter(f => f.type === 'application/pdf');
 
-            if (uploadedFiles.length + pdfFiles.length > 3) {
-                showError('Maximum 3 PDF files allowed');
+            if (uploadedFiles.length + pdfFiles.length > 12) {
+                showError('Maximum 12 PDF files allowed (one per month)');
                 return;
             }
 
-            uploadedFiles = [...uploadedFiles, ...pdfFiles].slice(0, 3);
+            uploadedFiles = [...uploadedFiles, ...pdfFiles].slice(0, 12);
             updateFileList();
             updateAnalyzeButton();
         }
@@ -731,9 +731,14 @@
             clearError();
             transactions = [];
 
+            const totalFiles = uploadedFiles.length;
+            const loadingTextEl = document.getElementById('loadingText');
+
             for (let i = 0; i < uploadedFiles.length; i++) {
                 const statusIndicator = document.getElementById(`status-${i}`);
                 const statusText = document.getElementById(`status-text-${i}`);
+
+                loadingTextEl.textContent = `Analyzing statement ${i + 1} of ${totalFiles} with Claude AI...`;
 
                 statusIndicator.className = 'status-indicator status-processing';
                 statusText.textContent = 'Processing...';
