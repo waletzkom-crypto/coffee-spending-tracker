@@ -1150,37 +1150,219 @@ Do not include any text before or after the JSON array. Be comprehensive - it's 
 
         function exportToCSV() {
             const selected = getSelectedTransactions();
-            const csv = [
-                ['Date', 'Merchant', 'Amount'],
-                ...selected.map(t => [t.date, t.merchant, t.amount.toFixed(2)])
-            ].map(row => row.join(',')).join('\n');
+            const total = selected.reduce((sum, t) => sum + t.amount, 0);
+            const count = selected.length;
+
+            const dates = selected.map(t => new Date(t.date));
+            const daysDiff = (Math.max(...dates) - Math.min(...dates)) / (1000 * 60 * 60 * 24) || 1;
+            const weeksDiff = daysDiff / 7 || 1;
+            const monthsDiff = daysDiff / 30 || 1;
+
+            const maxTransaction = Math.max(...selected.map(t => t.amount));
+            const homeSavings = count * 0.50;
+            const potentialSavings = total - homeSavings;
+
+            // Calculate shop rankings
+            const shopData = {};
+            selected.forEach(t => {
+                shopData[t.merchant] = (shopData[t.merchant] || 0) + t.amount;
+            });
+            const sortedShops = Object.entries(shopData).sort((a, b) => b[1] - a[1]);
+
+            // Calculate day of week spending
+            const weekendSpending = selected.filter(t => {
+                const day = new Date(t.date).getDay();
+                return day === 0 || day === 6;
+            }).reduce((sum, t) => sum + t.amount, 0);
+            const weekdaySpending = total - weekendSpending;
+
+            // Build comprehensive CSV
+            let csv = 'COFFEE SPENDING ANALYSIS REPORT\n\n';
+
+            csv += 'KEY METRICS\n';
+            csv += 'Metric,Value\n';
+            csv += `Total Spending,$${total.toFixed(2)}\n`;
+            csv += `Total Purchases,${count}\n`;
+            csv += `Average per Day,$${(total / daysDiff).toFixed(2)}\n`;
+            csv += `Average per Week,$${(total / weeksDiff).toFixed(2)}\n`;
+            csv += `Average per Month,$${(total / monthsDiff).toFixed(2)}\n`;
+            csv += `Average per Purchase,$${(total / count).toFixed(2)}\n`;
+            csv += `Most Expensive Purchase,$${maxTransaction.toFixed(2)}\n`;
+            csv += `Potential Annual Savings (vs home coffee),$${(potentialSavings * 4).toFixed(2)}\n`;
+            csv += `Weekday Spending,$${weekdaySpending.toFixed(2)}\n`;
+            csv += `Weekend Spending,$${weekendSpending.toFixed(2)}\n`;
+            csv += `Analysis Period,${Math.ceil(daysDiff)} days\n\n`;
+
+            csv += 'SPENDING BY COFFEE SHOP\n';
+            csv += 'Shop Name,Total Spent,Number of Visits\n';
+            sortedShops.forEach(([shop, amount]) => {
+                const visits = selected.filter(t => t.merchant === shop).length;
+                csv += `"${shop}",$${amount.toFixed(2)},${visits}\n`;
+            });
+            csv += '\n';
+
+            csv += 'ALL TRANSACTIONS\n';
+            csv += 'Date,Merchant,Amount\n';
+            selected.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(t => {
+                csv += `${t.date},"${t.merchant}",$${t.amount.toFixed(2)}\n`;
+            });
 
             downloadFile(csv, 'coffee-spending-analysis.csv', 'text/csv');
         }
 
-        function exportToPDF() {
+        async function exportToPDF() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
 
-            doc.setFontSize(20);
-            doc.text('Coffee Spending Analysis', 20, 20);
-
             const selected = getSelectedTransactions();
             const total = selected.reduce((sum, t) => sum + t.amount, 0);
+            const count = selected.length;
 
-            doc.setFontSize(12);
-            doc.text(`Total Spending: $${total.toFixed(2)}`, 20, 35);
-            doc.text(`Total Purchases: ${selected.length}`, 20, 45);
-            doc.text(`Average per Purchase: $${(total/selected.length).toFixed(2)}`, 20, 55);
+            const dates = selected.map(t => new Date(t.date));
+            const daysDiff = (Math.max(...dates) - Math.min(...dates)) / (1000 * 60 * 60 * 24) || 1;
+            const weeksDiff = daysDiff / 7 || 1;
+            const monthsDiff = daysDiff / 30 || 1;
 
-            doc.text('Recent Transactions:', 20, 70);
+            const maxTransaction = Math.max(...selected.map(t => t.amount));
+            const homeSavings = count * 0.50;
+            const potentialSavings = total - homeSavings;
 
-            let y = 80;
-            selected.slice(0, 20).forEach(t => {
-                doc.setFontSize(10);
-                doc.text(`${formatDate(t.date)} - ${t.merchant}: $${t.amount.toFixed(2)}`, 20, y);
-                y += 7;
+            const weekendSpending = selected.filter(t => {
+                const day = new Date(t.date).getDay();
+                return day === 0 || day === 6;
+            }).reduce((sum, t) => sum + t.amount, 0);
+            const weekdaySpending = total - weekendSpending;
+
+            // Calculate shop rankings
+            const shopData = {};
+            selected.forEach(t => {
+                shopData[t.merchant] = (shopData[t.merchant] || 0) + t.amount;
             });
+            const sortedShops = Object.entries(shopData).sort((a, b) => b[1] - a[1]).slice(0, 10);
+
+            // Page 1: Summary
+            doc.setFillColor(111, 78, 55);
+            doc.rect(0, 0, 210, 40, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(24);
+            doc.text('Coffee Spending Analysis', 105, 20, { align: 'center' });
+            doc.setFontSize(12);
+            doc.text(`Generated: ${new Date().toLocaleDateString()}`, 105, 30, { align: 'center' });
+
+            doc.setTextColor(62, 39, 35);
+            doc.setFontSize(16);
+            doc.text('Key Metrics', 20, 55);
+
+            doc.setFontSize(11);
+            let y = 65;
+            const metrics = [
+                [`Total Spending: $${total.toFixed(2)}`, `Total Purchases: ${count}`],
+                [`Avg per Day: $${(total / daysDiff).toFixed(2)}`, `Avg per Week: $${(total / weeksDiff).toFixed(2)}`],
+                [`Avg per Month: $${(total / monthsDiff).toFixed(2)}`, `Avg per Purchase: $${(total / count).toFixed(2)}`],
+                [`Most Expensive: $${maxTransaction.toFixed(2)}`, `Analysis Period: ${Math.ceil(daysDiff)} days`]
+            ];
+
+            metrics.forEach(([left, right]) => {
+                doc.text(left, 20, y);
+                doc.text(right, 110, y);
+                y += 10;
+            });
+
+            // Insights
+            doc.setFontSize(16);
+            doc.text('Insights & Savings', 20, y + 10);
+            y += 20;
+
+            doc.setFontSize(11);
+            doc.text(`Potential Annual Savings: $${(potentialSavings * 4).toFixed(2)}`, 20, y);
+            y += 7;
+            doc.setFontSize(9);
+            doc.text(`(Based on $0.50 per cup at home vs $${(total/count).toFixed(2)} average purchase)`, 25, y);
+            y += 10;
+
+            doc.setFontSize(11);
+            doc.text(`Weekday Spending: $${weekdaySpending.toFixed(2)} | Weekend: $${weekendSpending.toFixed(2)}`, 20, y);
+
+            // Top Coffee Shops
+            y += 15;
+            doc.setFontSize(16);
+            doc.text('Top Coffee Shops', 20, y);
+            y += 10;
+
+            doc.setFontSize(10);
+            sortedShops.forEach(([shop, amount], idx) => {
+                const visits = selected.filter(t => t.merchant === shop).length;
+                doc.text(`${idx + 1}. ${shop}`, 20, y);
+                doc.text(`$${amount.toFixed(2)} (${visits} visits)`, 150, y);
+                y += 7;
+                if (y > 270) {
+                    doc.addPage();
+                    y = 20;
+                }
+            });
+
+            // Page 2: Transactions
+            doc.addPage();
+            doc.setFillColor(111, 78, 55);
+            doc.rect(0, 0, 210, 30, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(18);
+            doc.text('All Transactions', 105, 18, { align: 'center' });
+
+            doc.setTextColor(62, 39, 35);
+            doc.setFontSize(10);
+            y = 40;
+
+            const sortedTransactions = [...selected].sort((a, b) => new Date(b.date) - new Date(a.date));
+            sortedTransactions.forEach((t, idx) => {
+                doc.text(`${formatDate(t.date)}`, 20, y);
+                doc.text(t.merchant.substring(0, 35), 55, y);
+                doc.text(`$${t.amount.toFixed(2)}`, 170, y);
+                y += 6;
+
+                if (y > 280) {
+                    doc.addPage();
+                    y = 20;
+                }
+            });
+
+            // Add charts as images
+            doc.addPage();
+            doc.setFillColor(111, 78, 55);
+            doc.rect(0, 0, 210, 30, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(18);
+            doc.text('Charts & Visualizations', 105, 18, { align: 'center' });
+
+            doc.setTextColor(62, 39, 35);
+            y = 45;
+
+            // Export charts as images
+            try {
+                const shopChart = document.getElementById('shopRankingChart');
+                if (shopChart) {
+                    const shopImg = shopChart.toDataURL('image/png');
+                    doc.setFontSize(12);
+                    doc.text('Coffee Shops by Spending', 20, y);
+                    doc.addImage(shopImg, 'PNG', 15, y + 5, 180, 80);
+                    y += 90;
+                }
+
+                if (y > 200) {
+                    doc.addPage();
+                    y = 20;
+                }
+
+                const trendChart = document.getElementById('trendChart');
+                if (trendChart) {
+                    const trendImg = trendChart.toDataURL('image/png');
+                    doc.setFontSize(12);
+                    doc.text('Weekly Spending Trend', 20, y);
+                    doc.addImage(trendImg, 'PNG', 15, y + 5, 180, 80);
+                }
+            } catch (e) {
+                console.log('Could not export charts:', e);
+            }
 
             doc.save('coffee-spending-analysis.pdf');
         }
