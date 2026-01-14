@@ -1281,9 +1281,10 @@ Do not include any text before or after the JSON array. Be comprehensive - it's 
             });
 
             csv += 'SPENDING BY DAY OF WEEK\n';
-            csv += 'Day,Amount\n';
+            csv += 'Day,Amount,Percentage\n';
             ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].forEach(day => {
-                csv += `${day},$${dayOfWeekData[day].toFixed(2)}\n`;
+                const dayPercent = ((dayOfWeekData[day] / total) * 100).toFixed(1);
+                csv += `${day},$${dayOfWeekData[day].toFixed(2)},${dayPercent}%\n`;
             });
             csv += '\n';
 
@@ -1306,12 +1307,13 @@ Do not include any text before or after the JSON array. Be comprehensive - it's 
             });
             csv += '\n';
 
-            csv += 'SPENDING BY COFFEE SHOP\n';
-            csv += 'Shop Name,Total Spent,Number of Visits,Avg per Visit\n';
+            csv += 'SPENDING DISTRIBUTION BY COFFEE SHOP\n';
+            csv += 'Shop Name,Total Spent,Percentage,Number of Visits,Avg per Visit\n';
             sortedShops.forEach(([shop, amount]) => {
                 const visits = selected.filter(t => t.merchant === shop).length;
                 const avgPerVisit = amount / visits;
-                csv += `"${shop}",$${amount.toFixed(2)},${visits},$${avgPerVisit.toFixed(2)}\n`;
+                const percentage = ((amount / total) * 100).toFixed(1);
+                csv += `"${shop}",$${amount.toFixed(2)},${percentage}%,${visits},$${avgPerVisit.toFixed(2)}\n`;
             });
             csv += '\n';
 
@@ -1522,7 +1524,36 @@ Do not include any text before or after the JSON array. Be comprehensive - it's 
             doc.text('Detailed Breakdown', 105, 18, { align: 'center' });
             doc.setTextColor(62, 39, 35);
 
+            // Spending Distribution table (matches pie chart)
+            y = 45;
+            doc.setFontSize(14);
+            doc.text('Spending Distribution by Shop', 20, y);
+            y += 8;
+            doc.setFontSize(9);
+            doc.setTextColor(100, 100, 100);
+            doc.text('Shop', 25, y);
+            doc.text('Amount', 100, y);
+            doc.text('% of Total', 140, y);
+            doc.text('Visits', 175, y);
+            y += 6;
+            doc.setTextColor(62, 39, 35);
+
+            sortedShops.forEach(([shop, amount], idx) => {
+                const visits = selected.filter(t => t.merchant === shop).length;
+                const percentage = ((amount / total) * 100).toFixed(1);
+                doc.text(`${idx + 1}. ${shop.substring(0, 30)}`, 25, y);
+                doc.text(`$${amount.toFixed(2)}`, 100, y);
+                doc.text(`${percentage}%`, 145, y);
+                doc.text(`${visits}`, 178, y);
+                y += 6;
+                if (y > 280) {
+                    doc.addPage();
+                    y = 20;
+                }
+            });
+
             // Day of week table
+            y += 10;
             const dayOfWeekData = { Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0, Sat: 0, Sun: 0 };
             const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             selected.forEach(t => {
@@ -1530,14 +1561,27 @@ Do not include any text before or after the JSON array. Be comprehensive - it's 
                 dayOfWeekData[day] += t.amount;
             });
 
-            y = 45;
+            if (y > 200) {
+                doc.addPage();
+                y = 20;
+            }
+
             doc.setFontSize(14);
             doc.text('Spending by Day of Week', 20, y);
-            y += 10;
+            y += 8;
+            doc.setFontSize(9);
+            doc.setTextColor(100, 100, 100);
+            doc.text('Day', 25, y);
+            doc.text('Amount', 60, y);
+            doc.text('% of Total', 100, y);
+            y += 6;
+            doc.setTextColor(62, 39, 35);
             doc.setFontSize(10);
             ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].forEach(day => {
+                const dayPercent = ((dayOfWeekData[day] / total) * 100).toFixed(1);
                 doc.text(`${day}:`, 25, y);
-                doc.text(`$${dayOfWeekData[day].toFixed(2)}`, 50, y);
+                doc.text(`$${dayOfWeekData[day].toFixed(2)}`, 55, y);
+                doc.text(`${dayPercent}%`, 102, y);
                 y += 7;
             });
 
