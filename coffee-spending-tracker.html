@@ -1030,7 +1030,16 @@ Do not include any text before or after the JSON array. Be comprehensive - it's 
                     const errorData = await response.json();
                     errorMessage = errorData.error?.message || errorMessage;
                     console.error('API Error Details:', errorData);
+
+                    // Check for rate limit error and show friendly message
+                    if (errorMessage.includes('rate limit') || errorMessage.includes('rate_limit') || response.status === 429) {
+                        throw new Error('Server is busy, please try again in a moment');
+                    }
                 } catch (e) {
+                    // If it's our friendly error, rethrow it
+                    if (e.message === 'Server is busy, please try again in a moment') {
+                        throw e;
+                    }
                     console.error('Failed to parse error response');
                 }
                 throw new Error(errorMessage);
