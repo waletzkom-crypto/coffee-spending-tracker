@@ -691,6 +691,30 @@
         let transactions = [];
         let charts = {};
 
+        // Coffee-themed color palette with variety
+        const COFFEE_COLORS = [
+            '#6F4E37',  // Coffee brown (primary)
+            '#8B4513',  // Saddle brown
+            '#A0522D',  // Sienna
+            '#D2691E',  // Chocolate
+            '#CD853F',  // Peru
+            '#DEB887',  // Burlywood
+            '#BC8F8F',  // Rosy brown
+            '#C4A484',  // Latte
+            '#967969',  // Mocha
+            '#5C4033',  // Dark espresso
+            '#8B7355',  // Caramel
+            '#A67B5B',  // Café au lait
+        ];
+
+        function getChartColors(count) {
+            const colors = [];
+            for (let i = 0; i < count; i++) {
+                colors.push(COFFEE_COLORS[i % COFFEE_COLORS.length]);
+            }
+            return colors;
+        }
+
         const elements = {
             uploadZone: document.getElementById('uploadZone'),
             fileInput: document.getElementById('fileInput'),
@@ -1044,7 +1068,7 @@ Do not include any text before or after the JSON array. Be comprehensive - it's 
                     datasets: [{
                         label: 'Total Spending ($)',
                         data: sortedShops.map(s => s[1]),
-                        backgroundColor: '#6F4E37',
+                        backgroundColor: getChartColors(sortedShops.length),
                         borderColor: '#3E2723',
                         borderWidth: 2
                     }]
@@ -1068,11 +1092,9 @@ Do not include any text before or after the JSON array. Be comprehensive - it's 
                     labels: sortedShops.map(s => s[0]),
                     datasets: [{
                         data: sortedShops.map(s => s[1]),
-                        backgroundColor: [
-                            '#6F4E37', '#A0826D', '#3E2723', '#8D6E63',
-                            '#5D4037', '#4E342E', '#795548', '#6D4C41',
-                            '#A1887F', '#BCAAA4'
-                        ]
+                        backgroundColor: getChartColors(sortedShops.length),
+                        borderColor: '#FFF8E7',
+                        borderWidth: 2
                     }]
                 },
                 options: {
@@ -1135,8 +1157,7 @@ Do not include any text before or after the JSON array. Be comprehensive - it's 
                     datasets: [{
                         label: 'Spending by Day ($)',
                         data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => dayData[d]),
-                        backgroundColor: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map(() => '#6F4E37')
-                            .concat(['Sat', 'Sun'].map(() => '#A0826D')),
+                        backgroundColor: getChartColors(7),
                         borderWidth: 2,
                         borderColor: '#3E2723'
                     }]
