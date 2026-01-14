@@ -531,6 +531,39 @@
             margin-top: 10px;
             font-style: italic;
         }
+
+        .footer {
+            background: linear-gradient(135deg, #6F4E37 0%, #3E2723 100%);
+            color: #FFF8E7;
+            border-radius: 20px;
+            padding: 30px;
+            margin-top: 40px;
+            text-align: center;
+        }
+
+        .footer-copyright {
+            font-size: 1em;
+            margin-bottom: 20px;
+        }
+
+        .footer-disclaimer {
+            border-top: 1px solid rgba(255, 248, 231, 0.3);
+            padding-top: 20px;
+            font-size: 0.75em;
+            color: rgba(255, 248, 231, 0.8);
+            line-height: 1.8;
+        }
+
+        .footer-disclaimer-title {
+            font-weight: 600;
+            color: #FFF8E7;
+            margin-bottom: 10px;
+            font-size: 0.85em;
+        }
+
+        .footer-disclaimer p {
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
@@ -625,6 +658,26 @@
                 </div>
             </div>
         </div>
+
+        <footer class="footer">
+            <p class="footer-copyright">Coffee Spending Tracker © 2026 - Powered by Claude AI</p>
+            <div class="footer-disclaimer">
+                <p class="footer-disclaimer-title">Disclaimer</p>
+                <p>
+                    This tool is provided for informational and educational purposes only. We make no warranties
+                    or representations regarding the accuracy, completeness, or reliability of the analysis results.
+                    The identification of coffee-related transactions is automated and may contain errors or omissions.
+                </p>
+                <p>
+                    We are not liable for any decisions made based on the information provided by this tool.
+                    Always verify transaction data against your official bank statements. This service does not
+                    constitute financial advice. Your uploaded files are processed in-memory and are not stored on our servers.
+                </p>
+                <p>
+                    By using this service, you acknowledge that you have read and agree to these terms.
+                </p>
+            </div>
+        </footer>
     </div>
 
     <script>
@@ -637,6 +690,30 @@
         let uploadedFiles = [];
         let transactions = [];
         let charts = {};
+
+        // Coffee-themed color palette with variety
+        const COFFEE_COLORS = [
+            '#6F4E37',  // Coffee brown (primary)
+            '#8B4513',  // Saddle brown
+            '#A0522D',  // Sienna
+            '#D2691E',  // Chocolate
+            '#CD853F',  // Peru
+            '#DEB887',  // Burlywood
+            '#BC8F8F',  // Rosy brown
+            '#C4A484',  // Latte
+            '#967969',  // Mocha
+            '#5C4033',  // Dark espresso
+            '#8B7355',  // Caramel
+            '#A67B5B',  // Café au lait
+        ];
+
+        function getChartColors(count) {
+            const colors = [];
+            for (let i = 0; i < count; i++) {
+                colors.push(COFFEE_COLORS[i % COFFEE_COLORS.length]);
+            }
+            return colors;
+        }
 
         const elements = {
             uploadZone: document.getElementById('uploadZone'),
@@ -991,7 +1068,7 @@ Do not include any text before or after the JSON array. Be comprehensive - it's 
                     datasets: [{
                         label: 'Total Spending ($)',
                         data: sortedShops.map(s => s[1]),
-                        backgroundColor: '#6F4E37',
+                        backgroundColor: getChartColors(sortedShops.length),
                         borderColor: '#3E2723',
                         borderWidth: 2
                     }]
@@ -1015,11 +1092,9 @@ Do not include any text before or after the JSON array. Be comprehensive - it's 
                     labels: sortedShops.map(s => s[0]),
                     datasets: [{
                         data: sortedShops.map(s => s[1]),
-                        backgroundColor: [
-                            '#6F4E37', '#A0826D', '#3E2723', '#8D6E63',
-                            '#5D4037', '#4E342E', '#795548', '#6D4C41',
-                            '#A1887F', '#BCAAA4'
-                        ]
+                        backgroundColor: getChartColors(sortedShops.length),
+                        borderColor: '#FFF8E7',
+                        borderWidth: 2
                     }]
                 },
                 options: {
@@ -1082,8 +1157,7 @@ Do not include any text before or after the JSON array. Be comprehensive - it's 
                     datasets: [{
                         label: 'Spending by Day ($)',
                         data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => dayData[d]),
-                        backgroundColor: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map(() => '#6F4E37')
-                            .concat(['Sat', 'Sun'].map(() => '#A0826D')),
+                        backgroundColor: getChartColors(7),
                         borderWidth: 2,
                         borderColor: '#3E2723'
                     }]
