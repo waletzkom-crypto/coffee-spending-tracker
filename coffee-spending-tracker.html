@@ -1272,11 +1272,46 @@ Do not include any text before or after the JSON array. Be comprehensive - it's 
             csv += `Weekend Spending,$${weekendSpending.toFixed(2)}\n`;
             csv += `Analysis Period,${Math.ceil(daysDiff)} days\n\n`;
 
+            // Day of week breakdown
+            const dayOfWeekData = { Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0, Sat: 0, Sun: 0 };
+            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            selected.forEach(t => {
+                const day = dayNames[new Date(t.date).getDay()];
+                dayOfWeekData[day] += t.amount;
+            });
+
+            csv += 'SPENDING BY DAY OF WEEK\n';
+            csv += 'Day,Amount\n';
+            ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].forEach(day => {
+                csv += `${day},$${dayOfWeekData[day].toFixed(2)}\n`;
+            });
+            csv += '\n';
+
+            // Weekly trend data
+            const weeklyData = {};
+            selected.forEach(t => {
+                const date = new Date(t.date);
+                const dayOfWeek = date.getDay();
+                const weekStart = new Date(date);
+                weekStart.setDate(date.getDate() - dayOfWeek);
+                const weekKey = weekStart.toISOString().substring(0, 10);
+                weeklyData[weekKey] = (weeklyData[weekKey] || 0) + t.amount;
+            });
+            const sortedWeeks = Object.entries(weeklyData).sort();
+
+            csv += 'WEEKLY SPENDING TREND\n';
+            csv += 'Week Starting,Amount\n';
+            sortedWeeks.forEach(([week, amount]) => {
+                csv += `${week},$${amount.toFixed(2)}\n`;
+            });
+            csv += '\n';
+
             csv += 'SPENDING BY COFFEE SHOP\n';
-            csv += 'Shop Name,Total Spent,Number of Visits\n';
+            csv += 'Shop Name,Total Spent,Number of Visits,Avg per Visit\n';
             sortedShops.forEach(([shop, amount]) => {
                 const visits = selected.filter(t => t.merchant === shop).length;
-                csv += `"${shop}",$${amount.toFixed(2)},${visits}\n`;
+                const avgPerVisit = amount / visits;
+                csv += `"${shop}",$${amount.toFixed(2)},${visits},$${avgPerVisit.toFixed(2)}\n`;
             });
             csv += '\n';
 
@@ -1418,30 +1453,123 @@ Do not include any text before or after the JSON array. Be comprehensive - it's 
 
             // Export charts as images
             try {
+                // Chart 1: Coffee Shops by Spending (Bar Chart)
                 const shopChart = document.getElementById('shopRankingChart');
                 if (shopChart) {
                     const shopImg = shopChart.toDataURL('image/png');
                     doc.setFontSize(12);
-                    doc.text('Coffee Shops by Spending', 20, y);
+                    doc.text('Top Coffee Shops by Spending', 20, y);
                     doc.addImage(shopImg, 'PNG', 15, y + 5, 180, 80);
-                    y += 90;
+                    y += 95;
                 }
 
-                if (y > 200) {
-                    doc.addPage();
-                    y = 20;
+                // Chart 2: Spending Distribution (Pie Chart)
+                const pieChart = document.getElementById('pieChart');
+                if (pieChart) {
+                    if (y > 180) {
+                        doc.addPage();
+                        y = 20;
+                    }
+                    const pieImg = pieChart.toDataURL('image/png');
+                    doc.setFontSize(12);
+                    doc.text('Spending Distribution by Shop', 20, y);
+                    doc.addImage(pieImg, 'PNG', 15, y + 5, 180, 80);
+                    y += 95;
                 }
 
+                // New page for remaining charts
+                doc.addPage();
+                doc.setFillColor(111, 78, 55);
+                doc.rect(0, 0, 210, 30, 'F');
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(18);
+                doc.text('Spending Trends & Patterns', 105, 18, { align: 'center' });
+                doc.setTextColor(62, 39, 35);
+                y = 45;
+
+                // Chart 3: Weekly Spending Trend (Line Chart)
                 const trendChart = document.getElementById('trendChart');
                 if (trendChart) {
                     const trendImg = trendChart.toDataURL('image/png');
                     doc.setFontSize(12);
                     doc.text('Weekly Spending Trend', 20, y);
                     doc.addImage(trendImg, 'PNG', 15, y + 5, 180, 80);
+                    y += 95;
+                }
+
+                // Chart 4: Day of Week Spending (Bar Chart)
+                const dayOfWeekChart = document.getElementById('dayOfWeekChart');
+                if (dayOfWeekChart) {
+                    if (y > 180) {
+                        doc.addPage();
+                        y = 20;
+                    }
+                    const dayImg = dayOfWeekChart.toDataURL('image/png');
+                    doc.setFontSize(12);
+                    doc.text('Spending by Day of Week', 20, y);
+                    doc.addImage(dayImg, 'PNG', 15, y + 5, 180, 80);
                 }
             } catch (e) {
                 console.log('Could not export charts:', e);
             }
+
+            // Add day of week data table
+            doc.addPage();
+            doc.setFillColor(111, 78, 55);
+            doc.rect(0, 0, 210, 30, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(18);
+            doc.text('Detailed Breakdown', 105, 18, { align: 'center' });
+            doc.setTextColor(62, 39, 35);
+
+            // Day of week table
+            const dayOfWeekData = { Mon: 0, Tue: 0, Wed: 0, Thu: 0, Fri: 0, Sat: 0, Sun: 0 };
+            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            selected.forEach(t => {
+                const day = dayNames[new Date(t.date).getDay()];
+                dayOfWeekData[day] += t.amount;
+            });
+
+            y = 45;
+            doc.setFontSize(14);
+            doc.text('Spending by Day of Week', 20, y);
+            y += 10;
+            doc.setFontSize(10);
+            ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].forEach(day => {
+                doc.text(`${day}:`, 25, y);
+                doc.text(`$${dayOfWeekData[day].toFixed(2)}`, 50, y);
+                y += 7;
+            });
+
+            // Weekly trend table
+            y += 10;
+            doc.setFontSize(14);
+            doc.text('Weekly Spending Breakdown', 20, y);
+            y += 10;
+
+            const weeklyData = {};
+            selected.forEach(t => {
+                const date = new Date(t.date);
+                const dayOfWeek = date.getDay();
+                const weekStart = new Date(date);
+                weekStart.setDate(date.getDate() - dayOfWeek);
+                const weekKey = weekStart.toISOString().substring(0, 10);
+                weeklyData[weekKey] = (weeklyData[weekKey] || 0) + t.amount;
+            });
+            const sortedWeeksData = Object.entries(weeklyData).sort();
+
+            doc.setFontSize(10);
+            sortedWeeksData.forEach(([week, amount]) => {
+                const weekDate = new Date(week);
+                const formattedWeek = weekDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                doc.text(`Week of ${formattedWeek}:`, 25, y);
+                doc.text(`$${amount.toFixed(2)}`, 90, y);
+                y += 7;
+                if (y > 280) {
+                    doc.addPage();
+                    y = 20;
+                }
+            });
 
             doc.save('coffee-spending-analysis.pdf');
         }
